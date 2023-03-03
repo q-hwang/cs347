@@ -102,6 +102,7 @@ def display_full_webpage(state_dict, curr_stage_idx):
 if __name__ == "__main__":
     print("APP: Welcome! What do you want to eat?")
     init_input = input('User:')
+    # TODO: try populate this initial guess with log.txt, heuristic + maybe with LLM using few shot prompting 
     state_dict = init_guess_state_dict
 
     # initial handeling
@@ -111,8 +112,18 @@ if __name__ == "__main__":
             # user engaging screen
             confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level = display_summary_webpage(state_dict)
             if confirm:
-                # TODO: check all stages are filled up
-                exit()
+                filled = True
+                for s in range(len(STAGES)):
+                    if state_dict[s]["selection"] is None:
+                        print("CANNOT CONFIRM, need to complete " + STAGES[s])
+                        filled = False
+                        break
+                if filled:
+                    with open("log.txt", "a+") as f:
+                        f.write(str((init_input, [x["level"] for x  in state_dict])))
+                    exit()
+                else:
+                    continue
             else:
                 if selected_option_idx is not None:
                     state_dict[edit_stage]["selection"] = state_dict[edit_stage]["selection"][selected_option_idx]
