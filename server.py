@@ -16,19 +16,19 @@ def get_user_input():
     return  False, edit_stage, button, message 
 
 def get_llm_restaurant_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM: " + global_prompt + "    " + local_feedback)
+    print("LLM on restaurant: " + global_prompt + "    " + local_feedback)
     return random.choices(["r1", "r2", "r3"],k=2)
 
 def get_llm_food_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM: " + global_prompt + "    " + local_feedback)
+    print("LLM on food: " + global_prompt + "    " + local_feedback)
     return random.choices(["f1", "f2", "f3"],k=2)
 
 def get_llm_delivery_option_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM: " + global_prompt + "    " + local_feedback)
+    print("LLM on delivery: " + global_prompt + "    " + local_feedback)
     return random.choices(["d1", "d2", "d3"],k=2)
 
 def get_llm_tips_option_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM: " + global_prompt + "    " + local_feedback)
+    print("LLM on tips: " + global_prompt + "    " + local_feedback)
     return random.choices(["t1", "t2", "t3"],k=2)
 
 init_guess_state_dict = [
@@ -68,13 +68,8 @@ def display_summary_webpage(state_dict):
         if selection is None:
             break
         print(f"Selected {STAGES[s]}:\n" + str(selection))
-   
-    # get user response: 
-        # selected_option
-        # local_feedback (chat)
-        # reroll, increase_level
+
     confirm, edit_stage, button, message = get_user_input()
-    print(confirm, edit_stage, button, message)
     selected_option_idx = None
     local_feedback = ""
     reroll = False 
@@ -100,6 +95,7 @@ def display_full_webpage(state_dict, curr_stage_idx):
 
 
 if __name__ == "__main__":
+    debug = False
     print("APP: Welcome! What do you want to eat?")
     init_input = input('User:')
     state_dict = init_guess_state_dict
@@ -110,7 +106,6 @@ if __name__ == "__main__":
         if curr_stage_idx == len(STAGES):
             # user engaging screen
             confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level = display_summary_webpage(state_dict)
-            print(confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level)
             if confirm:
                 # TODO: check all stages are filled up
                 exit()
@@ -132,8 +127,9 @@ if __name__ == "__main__":
         
         stage_name = STAGES[curr_stage_idx]
         stage_level = state_dict[curr_stage_idx]["level"]
-        print("handling: " + stage_name, stage_level)
-        print(state_dict)
+        if debug:
+            print("handling: " + stage_name, stage_level)
+            print(state_dict)
         if state_dict[curr_stage_idx]["selection"] is not None:
             curr_stage_idx += 1 
             continue
