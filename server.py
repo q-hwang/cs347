@@ -1,5 +1,6 @@
 
 import random
+debug = False
 
 STAGES = ["restaurant", "food items", "delivery_address", "tips"]
 
@@ -16,19 +17,23 @@ def get_user_input():
     return  False, edit_stage, button, message 
 
 def get_llm_restaurant_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM on restaurant: " + global_prompt + "    " + local_feedback)
+    if debug:
+        print("LLM on restaurant: " + global_prompt + "    " + local_feedback)
     return random.choices(["r1", "r2", "r3"],k=2)
 
 def get_llm_food_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM on food: " + global_prompt + "    " + local_feedback)
+    if debug:
+        print("LLM on food: " + global_prompt + "    " + local_feedback)
     return random.choices(["f1", "f2", "f3"],k=2)
 
 def get_llm_delivery_option_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM on delivery: " + global_prompt + "    " + local_feedback)
+    if debug:
+        print("LLM on delivery: " + global_prompt + "    " + local_feedback)
     return random.choices(["d1", "d2", "d3"],k=2)
 
 def get_llm_tips_option_recommendation(state_dict, global_prompt=None, local_feedback=None):
-    print("LLM on tips: " + global_prompt + "    " + local_feedback)
+    if debug:
+        print("LLM on tips: " + global_prompt + "    " + local_feedback)
     return random.choices(["t1", "t2", "t3"],k=2)
 
 init_guess_state_dict = [
@@ -95,7 +100,6 @@ def display_full_webpage(state_dict, curr_stage_idx):
 
 
 if __name__ == "__main__":
-    debug = False
     print("APP: Welcome! What do you want to eat?")
     init_input = input('User:')
     state_dict = init_guess_state_dict
