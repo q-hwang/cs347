@@ -6,7 +6,7 @@ import glob
 import os
 import copy
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
-debug = True
+debug = False
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2

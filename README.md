@@ -3,7 +3,7 @@
 
 # Backend Interaction flow
 
-server.py gives a basic text interface for the pipepline 
+server.py gives a basic text interface for the pipepline. To try it, please put your openai key in `keys/key.txt`.
 
 ## Overview and assumptitons
 
@@ -123,7 +123,6 @@ User:CONFIRM
 ```
 
 ## flow logic explained
-
 1. We first get an intial guess of the levels using get_init_adapt_guess
 2. We basically iteratively handle each stage according to the level, until we run into requiring user input
 3. Get the user input. 
@@ -136,11 +135,15 @@ User:CONFIRM
 1. if user choose to increase level in a stage -> increase level recorded to what user ends up having
 2. if user choose to not edit a stage -> decrease level gradually by 1/(expected number of round before user trusts this). This expected_number doubles every time the level of this stage is increased, so that this decay becomes slower and slower.
 
+
 ## Adapt to user preference
 1. context adaptation: LLM gives an guess (always used in combination with others; the combination ratio is CONTEXT_WEIGHT=1)
 2. global adaptation: if current user is new, we init from average of other user (average range: last SMOOTH=1)
 3. user adaptation: if current user has history record, we use the average of this user (average range: last SMOOTH=1)
 
+
+## Fake Menus
+They are in menu.json
 
 More details about code:
 - display_summary_webpage: display the summary and get user input
@@ -150,6 +153,5 @@ More details about code:
 - affects_stage: when changing the selection of stage A, all stages it affects will need to be rehandled
 
 TODO:
-- currently the level can only increase but not decrease. will implement the global data collection and adjustment.
-- some actions might not be valid or should not be allowed e.g. should not allow confirm when user has not selected everything.
-- have not tested starting from a different default
+- currently does not show the total price of the food
+- maybe add a bit more explanation from LLM

@@ -3,8 +3,8 @@ import openai
 import json
 
 with open("keys/key.txt", "r") as f:
-    codex_key = f.read().strip()
-openai.organization, openai.api_key = codex_key.split(":")
+    key = f.read().strip()
+openai.api_key = key
 
 menus = json.load(open("menu.json"))
 
