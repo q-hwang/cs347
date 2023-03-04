@@ -6,7 +6,7 @@ import glob
 import os
 import copy
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
-debug = False
+debug = True
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
@@ -38,7 +38,7 @@ init_guess_state_dict = [
     },
     {
         "level": 1, 
-        "affects_stage": [3],
+        "affects_stage": [2, 3],
         "affected_by": [0],
         "handeler": get_llm_food_recommendation, 
         "selection": None,
@@ -49,7 +49,7 @@ init_guess_state_dict = [
     {
         "level": 1, 
         "affects_stage": [3],
-        "affected_by": [0],
+        "affected_by": [0, 1],
         "handeler": get_llm_delivery_option_recommendation, 
         "selection": None,
         "local_feedback": "",
@@ -168,6 +168,7 @@ if __name__ == "__main__":
             # user engaging screen
             confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level = display_summary_webpage(state_dict)
             if confirm:
+                # user confirm! 
                 filled = True
                 for s in range(len(STAGES)):
                     if not is_finalized(state_dict, s):
@@ -175,6 +176,7 @@ if __name__ == "__main__":
                         filled = False
                         break
                 if filled:
+                    # save interaction result to history
                     with jsonlines.open(f"histories/{user_name}_levels.jsonl", mode='a') as writer:
                         end_estimate = state_dict
                         for i in range(len(state_dict)):
@@ -182,7 +184,6 @@ if __name__ == "__main__":
                                 if debug:
                                     print("ADAPTATION INCREASE")
                                 end_estimate[i]["expected_adapt_time"] = end_estimate[i]["expected_adapt_time"] * ADAPTATION_PENALTY
-                            # elif not state_dict[i]["edited"]:
                             else:
                                 if debug:
                                     print("ADAPTATION DECREASE")
@@ -192,19 +193,17 @@ if __name__ == "__main__":
 
                     with jsonlines.open(f"histories/{user_name}_expected_adapt_times.jsonl", mode='w') as writer:
                         writer.write([x["expected_adapt_time"] for x  in end_estimate])
-
-                    # with open(f"{user_name}_log.txt", "a+") as f:
-                    #     f.write(str((init_input, [x["level"] for x  in state_dict])))
                     exit()
                 else:
                     continue
             else:
+                # user request to update a stage
                 if selected_option_idx is not None:
+                    # user selected an option from suggestion or direct manipulation
                     state_dict[edit_stage]["selection"] = state_dict[edit_stage]["selection"][selected_option_idx]
-                    for s in state_dict[edit_stage]["affects_stage"]:
-                        state_dict[s]["selection"] = None
                     curr_stage_idx = edit_stage + 1
                 else:
+                    # user wants to edit the stage with AI
                     curr_stage_idx = edit_stage
                     state_dict[edit_stage]["selection"] = None
                     state_dict[edit_stage]["edited"] = True
@@ -212,6 +211,10 @@ if __name__ == "__main__":
                     if increase_level:
                         curr_level = state_dict[curr_stage_idx]["level"]
                         state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 3)
+                
+                # erase other affected stages for recomputation
+                for s in state_dict[edit_stage]["affects_stage"]:
+                    state_dict[s]["selection"] = None
                 continue
 
         
@@ -220,7 +223,9 @@ if __name__ == "__main__":
         if debug:
             print("handling: " + stage_name, stage_level)
             print(state_dict)
+
         if state_dict[curr_stage_idx]["selection"] is not None or any([not is_finalized(state_dict, s) for s in  state_dict[curr_stage_idx]["affected_by"]]):
+            # do not handle this stage yet either because the result has already been computed or the previous stage is not finalized
             curr_stage_idx += 1 
             continue
 
@@ -228,24 +233,24 @@ if __name__ == "__main__":
             # direct maipulation:
             selected_option = display_full_webpage(state_dict, curr_stage_idx)
             state_dict[curr_stage_idx]["selection"] = selected_option
-        if stage_level  == 2:
-            # recommend to user
 
+        if stage_level  == 2:
+            # recommend three options to user
             local_feedback = state_dict[curr_stage_idx]["local_feedback"]
             llm_suggestions = state_dict[curr_stage_idx]["handeler"](state_dict, local_feedback)
             state_dict[curr_stage_idx]["selection"] = llm_suggestions
-            init_guess_state_dict[i]["local_feedback"][-1].append(llm_suggestions)
+            state_dict[curr_stage_idx]["local_feedback"][-1].append(llm_suggestions)
             curr_stage_idx = len(STAGES)
             continue
 
         if stage_level in [0, 1]:
-            # skip
-
+            # AI select and skip
             local_feedback = state_dict[curr_stage_idx]["local_feedback"]
             llm_suggestions = state_dict[curr_stage_idx]["handeler"](state_dict, local_feedback)
             state_dict[curr_stage_idx]["selection"] = llm_suggestions[0]
-            init_guess_state_dict[i]["local_feedback"][-1].append(llm_suggestions[0])
+            state_dict[curr_stage_idx]["local_feedback"][-1].append(llm_suggestions[0])
         
+        # erase other affected stages for recomputation
         for s in state_dict[curr_stage_idx]["affects_stage"]:
             state_dict[s]["selection"] = None
         curr_stage_idx += 1 

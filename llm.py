@@ -139,7 +139,7 @@ def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
     prompt=f"""The user has chosen to order {dish} from {restaurant} via the selected delivery option \"{state_dict[2]["selection"]}\". Suggest three tips amount in us dollar for the user based on their input, ranked from more suggested to less suggested. The sugggested three tips amount should be separated by commas.
 
 {prompt_history}"""
-    print(prompt)
+    # print(prompt)
     
     completion = openai.Completion.create(
             model="text-davinci-003",
