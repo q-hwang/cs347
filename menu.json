@@ -1,0 +1,44 @@
+{
+  "Koi Sushi": {
+    "California Roll": "$7.50",
+    "Spicy Tuna Roll": "$8.50",
+    "Salmon Avocado Roll": "$7.00",
+    "Tuna Sashimi": "$9.00",
+    "Miso Soup": "$3.50"
+  },
+  "Sakura Sushi": {
+    "Dragon Roll": "$9.50",
+    "Rainbow Roll": "$10.50",
+    "Eel Avocado Roll": "$8.00",
+    "Salmon Nigiri": "$7.00",
+    "Edamame": "$4.00"
+  },
+  "Taco Loco": {
+    "Beef Burrito": "$7.50",
+    "Chicken Enchiladas": "$8.50",
+    "Chimichanga": "$7.00",
+    "Taco Salad": "$9.00",
+    "Nachos": "$3.50"
+  },
+  "El Burrito": {
+    "Beef Tacos": "$9.50",
+    "Chile Relleno": "$10.50",
+    "Quesadilla": "$8.00",
+    "Tamales": "$7.00",
+    "Guacamole": "$4.00"
+  },
+  "pizza palace": {
+    "Cheese Pizza": "$7.50",
+    "Pepperoni Pizza": "$8.50",
+    "Veggie Pizza": "$7.00",
+    "Garlic Bread": "$9.00",
+    "Salad": "$3.50"
+  },
+  "Burger Barn": {
+    "Cheeseburger": "$9.50",
+    "Bacon Burger": "$10.50",
+    "Veggie Burger": "$8.00",
+    "Fries": "$7.00",
+    "Onion Rings": "$4.00"
+  }
+}
