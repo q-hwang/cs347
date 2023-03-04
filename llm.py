@@ -48,6 +48,8 @@ def build_prompt_history(word, local_feedback=None):
         for l in local_feedback:
             prompt_history += f"User Input: {l[0]}"
             if len(l) > 1:
+                if type(l[1]) == list:
+                    l[1] = ", ".join(l[1])
                 prompt_history += f"\nPreviously suggested {word}: {l[1]}\n\n"
 
     prompt_history += "\nSuggested " + word + ":"
@@ -76,7 +78,7 @@ def get_llm_restaurant_recommendation(state_dict, local_feedback=None):
             stop = "\n"
         )['choices'][0]['text']
     
-    return completion.strip().split(",")
+    return [x.strip() for x in completion.strip().split(",")]
 
 
 
@@ -103,7 +105,7 @@ def get_llm_food_recommendation(state_dict, local_feedback=None):
             stop = "\n"
         )['choices'][0]['text']
     
-    return completion.strip().split(";")
+    return [x.strip() for x in completion.strip().split(";")]
 
 def get_llm_delivery_option_recommendation(state_dict, local_feedback=None):
     prompt_history = "User Input: Anything"
@@ -126,7 +128,7 @@ def get_llm_delivery_option_recommendation(state_dict, local_feedback=None):
             stop = "\n"
         )['choices'][0]['text']
     
-    return completion.strip().split(",")
+    return [x.strip() for x in completion.strip().split(",")]
 
 def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
     prompt_history = "User Input: Anything"
@@ -150,4 +152,4 @@ def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
             stop = "\n"
         )['choices'][0]['text']
     
-    return completion.strip().split(",")
+    return [x.strip() for x in completion.strip().split(",")]

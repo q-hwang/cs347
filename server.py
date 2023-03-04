@@ -6,7 +6,7 @@ import glob
 import os
 import copy
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
-debug = False
+debug = True
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
@@ -14,7 +14,8 @@ SMOOTH = 1
 CONTEXT_WEIGHT = 1
 
 def get_user_input():
-    input_string = input('User:')
+    input_string = input('User Input:')
+    print("==================================\n\n")
     if "CONFIRM" in input_string:
         return True, 0, 0, ""
     inputs = input_string.split(",") 
@@ -73,7 +74,10 @@ def display_summary_webpage(state_dict):
         selection = state_dict[s]["selection"] 
         if selection is None:
             break
-        print(f"Selected {STAGES[s]}:\n" + str(selection))
+        print(f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection))
+
+def get_user_input_buttons():
+    print("\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
 
     confirm, edit_stage, button, message = get_user_input()
     selected_option_idx = None
@@ -95,7 +99,8 @@ def display_summary_webpage(state_dict):
 
 
 def display_full_webpage(state_dict, curr_stage_idx):
-    
+    display_summary_webpage(state_dict)
+    print(f"Stage {curr_stage_idx} [display the original webpage...]:")
     selected_option = input('User give option:')
     return selected_option
 
@@ -147,14 +152,15 @@ def is_finalized(state_dict, stage_idx):
 
 
 if __name__ == "__main__":
-    print("APP: Welcome! What do you want?")
     user_name = input('User Name:')
-    init_input = input('User:')
+    print("APP: Welcome! What do you want?")
+    init_input = input('User Input:')
+    print("\n\n")
     # TODO: try populate this initial guess with log.txt, heuristic + maybe with LLM using few shot prompting 
     init_level_guess = get_init_level_guess(user_name, init_input)
     init_adapt_guess = get_init_adapt_guess(user_name)
-    print(init_level_guess)
-    print(init_adapt_guess)
+    # print(init_level_guess)
+    # print(init_adapt_guess)
     for i in range(len(STAGES)):
         init_guess_state_dict[i]["level"] = round(init_level_guess[i])
         init_guess_state_dict[i]["expected_adapt_time"] = int(init_adapt_guess[i])
@@ -166,7 +172,8 @@ if __name__ == "__main__":
     while True:
         if curr_stage_idx == len(STAGES):
             # user engaging screen
-            confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level = display_summary_webpage(state_dict)
+            display_summary_webpage(state_dict)
+            confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level = get_user_input_buttons()
             if confirm:
                 # user confirm! 
                 filled = True
