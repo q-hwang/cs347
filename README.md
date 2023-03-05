@@ -1,6 +1,5 @@
 # cs347
 
-
 # Backend Interaction flow
 
 server.py gives a basic text interface for the pipepline. To try it, please put your openai key in `keys/key.txt`.
@@ -12,7 +11,7 @@ There are four stages: ["restaurant", "food items", "delivery methods", "tips"]
 There are four levels for each stage:
 0: do not display what is the selected option (not implemented now for debugging)
 1: skip the stage and display the selected option at the summary page (default)
-2: give options at the summary page 
+2: give options at the summary page
 3: user direct control (currently assuming user will just enter a name directly)
 
 

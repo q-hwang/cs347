@@ -5,13 +5,25 @@ import numpy as np
 import glob
 import os
 import copy
+import flask
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
-debug = False
+debug = True
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
 SMOOTH = 1
 CONTEXT_WEIGHT = 1
+
+app = flask.Flask(__name__)
+
+@app.route('/', methods=['GET', 'POST'])
+def receiveMessage():
+    if flask.request.method == 'POST': # not working
+        content = flask.request.data
+        print(content)
+    else:
+        return 'Hello World!'
+
 
 def get_user_input():
     input_string = input('User Input:')
@@ -152,6 +164,8 @@ def is_finalized(state_dict, stage_idx):
 
 
 if __name__ == "__main__":
+    # app.run(port=5000, debug=debug)
+
     user_name = input('User Name:')
     print("APP: Welcome! What do you want?")
     init_input = input('User Input:')
@@ -261,7 +275,3 @@ if __name__ == "__main__":
         for s in state_dict[curr_stage_idx]["affects_stage"]:
             state_dict[s]["selection"] = None
         curr_stage_idx += 1 
-        
-        
-
-
