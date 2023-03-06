@@ -6,6 +6,9 @@ import glob
 import os
 import copy
 import flask
+from flask_cors import CORS
+
+
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
 debug = True
 
@@ -15,14 +18,14 @@ SMOOTH = 1
 CONTEXT_WEIGHT = 1
 
 app = flask.Flask(__name__)
+CORS(app)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['POST'])
 def receiveMessage():
-    if flask.request.method == 'POST': # not working
-        content = flask.request.data
-        print(content)
-    else:
-        return 'Hello World!'
+    if flask.request.method == 'POST':
+        user_input = flask.request.get_json()
+        print(f'User input: {user_input}')
+        return 'this is the bot recommendation'
 
 
 def get_user_input():
@@ -164,7 +167,7 @@ def is_finalized(state_dict, stage_idx):
 
 
 if __name__ == "__main__":
-    # app.run(port=5000, debug=debug)
+    app.run(port=5001, debug=debug)
 
     user_name = input('User Name:')
     print("APP: Welcome! What do you want?")
