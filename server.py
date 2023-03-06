@@ -5,32 +5,36 @@ import numpy as np
 import glob
 import os
 import copy
-import flask
-from flask_cors import CORS
+from flask import Flask, jsonify
+from flask_socketio import SocketIO, emit
+import threading
 
 
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
-debug = True
+debug = False
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
 SMOOTH = 1
 CONTEXT_WEIGHT = 1
 
-app = flask.Flask(__name__)
-CORS(app)
+curr_stage_idx = 0
+state_dict = []
+user_name = ''
+init_input = ''
+init_level_guess = []
 
-@app.route('/', methods=['POST'])
-def receiveMessage():
-    if flask.request.method == 'POST':
-        user_input = flask.request.get_json()
-        print(f'User input: {user_input}')
-        return 'this is the bot recommendation'
+# Initialize flask webserver and socket
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+app.config['CORS_ALLOWED_ORIGINS'] = ['http://localhost:3001']
+app.config['CORS_SUPPORTS_CREDENTIALS'] = True
+socketio = SocketIO(app, cors_allowed_origins="http://localhost:3001")
 
 
-def get_user_input():
-    input_string = input('User Input:')
-    print("==================================\n\n")
+def get_user_input(m):
+    input_string = m
+    emit('recommendations', "==================================\n\n")
     if "CONFIRM" in input_string:
         return True, 0, 0, ""
     inputs = input_string.split(",") 
@@ -39,7 +43,7 @@ def get_user_input():
     message = ""
     if len(inputs) > 2:
         message = inputs[2]
-    return  False, edit_stage, button, message 
+    return False, edit_stage, button, message 
 
 init_guess_state_dict = [
     {
@@ -85,16 +89,21 @@ init_guess_state_dict = [
 ]
 
 def display_summary_webpage(state_dict):
+    message = ""
     for s in range(len(STAGES)):
         selection = state_dict[s]["selection"] 
         if selection is None:
             break
-        print(f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection))
+        message += f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection) + "\n\n"
+    emit('recommendations', message)
+        
+    
+@socketio.on('message')
+def get_user_input_buttons(message):
+    print (f"{message} adsfjkladsf")
+    emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
 
-def get_user_input_buttons():
-    print("\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
-
-    confirm, edit_stage, button, message = get_user_input()
+    confirm, edit_stage, button, message = get_user_input(message)
     selected_option_idx = None
     local_feedback = ""
     reroll = False 
@@ -109,13 +118,11 @@ def get_user_input_buttons():
     else:
         local_feedback = message
 
-    return confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level
-
-
+    continue_session(True, confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level)
 
 def display_full_webpage(state_dict, curr_stage_idx):
     display_summary_webpage(state_dict)
-    print(f"Stage {curr_stage_idx} [display the original webpage...]:")
+    emit('recommendations', f"Stage {curr_stage_idx} [display the original webpage...]:")
     selected_option = input('User give option:')
     return selected_option
 
@@ -150,9 +157,7 @@ def get_init_level_guess(user_name, user_input):
         return this_user_level * (1-CONTEXT_WEIGHT) + context_level * CONTEXT_WEIGHT
     else:
         return (all_user_level * len(all_user_levels) + all_user_level_default*3) / (len(all_user_levels)+3) * (1-CONTEXT_WEIGHT) + context_level* CONTEXT_WEIGHT
-
     
-
 def get_init_adapt_guess(user_name):
     this_user_adapt = np.array([1,1,1,1]) # default
     if os.path.exists(f"histories/{user_name}_levels.jsonl"):
@@ -165,88 +170,125 @@ def get_init_adapt_guess(user_name):
 def is_finalized(state_dict, stage_idx):
     return type(state_dict[stage_idx]["selection"]) == str
 
+# def socket_input(message):
+#     response = None
+#     socketio.emit('input', message)
 
-if __name__ == "__main__":
-    app.run(port=5001, debug=debug)
+#     @socketio.on('message')
+#     def handle_output(data):
+#         nonlocal response
+#         response = data
 
-    user_name = input('User Name:')
-    print("APP: Welcome! What do you want?")
-    init_input = input('User Input:')
-    print("\n\n")
+#     while response is None:
+#         socketio.sleep(0.1)
+
+#     return response
+
+@socketio.event
+def connect():
+    emit('recommendations', "To start, enter your name, comma separated with your initial input \n\n")
+
+
+@socketio.on('init_message')
+def getUserInfo(init_message):
+    global curr_stage_idx
+    global state_dict
+    global user_name
+    global init_input
+    global init_level_guess
+
+    curr_stage_idx = 0
+    user_name, init_input = init_message.split(",")
+    emit('recommendations', "\n\n")
+
+    print(f"User {user_name} is starting the session with input: {init_input}")
+
     # TODO: try populate this initial guess with log.txt, heuristic + maybe with LLM using few shot prompting 
     init_level_guess = get_init_level_guess(user_name, init_input)
     init_adapt_guess = get_init_adapt_guess(user_name)
-    # print(init_level_guess)
-    # print(init_adapt_guess)
+    # emit('recommendations', init_level_guess)
+    # emit('recommendations', init_adapt_guess)
     for i in range(len(STAGES)):
         init_guess_state_dict[i]["level"] = round(init_level_guess[i])
         init_guess_state_dict[i]["expected_adapt_time"] = int(init_adapt_guess[i])
         init_guess_state_dict[i]["local_feedback"] = [[init_input]]
     state_dict = copy.deepcopy(init_guess_state_dict)
+    continue_session(False)
 
+
+def continue_session(displayed, confirm=None, edit_stage=None, selected_option_idx=None, local_feedback=None, reroll=None, increase_level=None):
     # initial handeling
-    curr_stage_idx = 0
+    global curr_stage_idx
+    global state_dict
+    global user_name
+    global init_input
+    global init_level_guess
+
+
     while True:
         if curr_stage_idx == len(STAGES):
             # user engaging screen
-            display_summary_webpage(state_dict)
-            confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level = get_user_input_buttons()
-            if confirm:
-                # user confirm! 
-                filled = True
-                for s in range(len(STAGES)):
-                    if not is_finalized(state_dict, s):
-                        print("CANNOT CONFIRM, need to complete " + STAGES[s])
-                        filled = False
-                        break
-                if filled:
-                    # save interaction result to history
-                    with jsonlines.open(f"histories/{user_name}_levels.jsonl", mode='a') as writer:
-                        end_estimate = state_dict
-                        for i in range(len(state_dict)):
-                            if state_dict[i]["level"] > init_guess_state_dict[i]["level"]:
-                                if debug:
-                                    print("ADAPTATION INCREASE")
-                                end_estimate[i]["expected_adapt_time"] = end_estimate[i]["expected_adapt_time"] * ADAPTATION_PENALTY
-                            else:
-                                if debug:
-                                    print("ADAPTATION DECREASE")
-                                end_estimate[i]["level"] = max(init_level_guess[i] - 1/state_dict[i]["expected_adapt_time"], 0)
-                
-                        writer.write((init_input, [x["level"] for x  in end_estimate]))
-
-                    with jsonlines.open(f"histories/{user_name}_expected_adapt_times.jsonl", mode='w') as writer:
-                        writer.write([x["expected_adapt_time"] for x  in end_estimate])
-                    exit()
-                else:
-                    continue
+            if not displayed:
+                display_summary_webpage(state_dict)
+                return
             else:
-                # user request to update a stage
-                if selected_option_idx is not None:
-                    # user selected an option from suggestion or direct manipulation
-                    state_dict[edit_stage]["selection"] = state_dict[edit_stage]["selection"][selected_option_idx]
-                    curr_stage_idx = edit_stage + 1
+                displayed = False
+                if confirm:
+                    # user confirm! 
+                    filled = True
+                    for s in range(len(STAGES)):
+                        if not is_finalized(state_dict, s):
+                            emit('recommendations', "CANNOT CONFIRM, need to complete " + STAGES[s])
+                            filled = False
+                            break
+                    if filled:
+                        # save interaction result to history
+                        with jsonlines.open(f"histories/{user_name}_levels.jsonl", mode='a') as writer:
+                            end_estimate = state_dict
+                            for i in range(len(state_dict)):
+                                if state_dict[i]["level"] > init_guess_state_dict[i]["level"]:
+                                    if debug:
+                                        emit('recommendations', "ADAPTATION INCREASE")
+                                    end_estimate[i]["expected_adapt_time"] = end_estimate[i]["expected_adapt_time"] * ADAPTATION_PENALTY
+                                else:
+                                    if debug:
+                                        emit('recommendations', "ADAPTATION DECREASE")
+                                    end_estimate[i]["level"] = max(init_level_guess[i] - 1/state_dict[i]["expected_adapt_time"], 0)
+                    
+                            writer.write((init_input, [x["level"] for x  in end_estimate]))
+
+                        with jsonlines.open(f"histories/{user_name}_expected_adapt_times.jsonl", mode='w') as writer:
+                            writer.write([x["expected_adapt_time"] for x  in end_estimate])
+                        exit()
+                    else:
+                        continue
                 else:
-                    # user wants to edit the stage with AI
-                    curr_stage_idx = edit_stage
-                    state_dict[edit_stage]["selection"] = None
-                    state_dict[edit_stage]["edited"] = True
-                    state_dict[curr_stage_idx]["local_feedback"].append([user_message])
-                    if increase_level:
-                        curr_level = state_dict[curr_stage_idx]["level"]
-                        state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 3)
-                
-                # erase other affected stages for recomputation
-                for s in state_dict[edit_stage]["affects_stage"]:
-                    state_dict[s]["selection"] = None
-                continue
+                    # user request to update a stage
+                    if selected_option_idx is not None:
+                        # user selected an option from suggestion or direct manipulation
+                        state_dict[edit_stage]["selection"] = state_dict[edit_stage]["selection"][selected_option_idx]
+                        curr_stage_idx = edit_stage + 1
+                    else:
+                        # user wants to edit the stage with AI
+                        _stage_idcurrx = edit_stage
+                        state_dict[edit_stage]["selection"] = None
+                        state_dict[edit_stage]["edited"] = True
+                        state_dict[curr_stage_idx]["local_feedback"].append([user_message])
+                        if increase_level:
+                            curr_level = state_dict[curr_stage_idx]["level"]
+                            state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 3)
+                    
+                    # erase other affected stages for recomputation
+                    for s in state_dict[edit_stage]["affects_stage"]:
+                        state_dict[s]["selection"] = None
+                    continue
 
         
         stage_name = STAGES[curr_stage_idx]
         stage_level = state_dict[curr_stage_idx]["level"]
         if debug:
-            print("handling: " + stage_name, stage_level)
-            print(state_dict)
+            emit('recommendations', "handling: " + stage_name + " " + str(stage_level))
+            emit('recommendations', str(state_dict))
 
         if state_dict[curr_stage_idx]["selection"] is not None or any([not is_finalized(state_dict, s) for s in  state_dict[curr_stage_idx]["affected_by"]]):
             # do not handle this stage yet either because the result has already been computed or the previous stage is not finalized
@@ -278,3 +320,8 @@ if __name__ == "__main__":
         for s in state_dict[curr_stage_idx]["affects_stage"]:
             state_dict[s]["selection"] = None
         curr_stage_idx += 1 
+
+
+if __name__ == "__main__":
+    socketio.run(app, port=5001, debug=True)
+

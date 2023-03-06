@@ -1,6 +1,5 @@
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, emit
-from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -13,7 +12,10 @@ def handle_message(message):
     print('received message: ' + message)
     emit('recommendations', generate_recommendations(message))
 
-
+@socketio.event
+def connect():
+    print('Client connected')
+    emit('recommendations', 'Welcome to the server')
 
 def generate_recommendations(message):
     # Your code to generate food recommendations goes here
