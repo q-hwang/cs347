@@ -98,7 +98,12 @@ def display_summary_webpage(state_dict):
         message += f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection) + "\n\n"
     emit('recommendations', message)
 
-    # time.sleep(2)
+    time.sleep(2)
+    message = "Current Control Levels: "
+    for s in range(len(STAGES)):
+        level = state_dict[s]["level"] 
+        message += f"{level}, "
+    emit('recommendations', message)
     # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
 
         
