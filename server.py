@@ -8,6 +8,7 @@ import copy
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, emit
 import threading
+import time
 
 
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
@@ -34,7 +35,7 @@ socketio = SocketIO(app, cors_allowed_origins="http://localhost:3001")
 
 def get_user_input(m):
     input_string = m
-    emit('recommendations', "==================================\n\n")
+    # emit('recommendations', "==================================\n\n")
     if "CONFIRM" in input_string:
         return True, 0, 0, ""
     inputs = input_string.split(",") 
@@ -96,13 +97,16 @@ def display_summary_webpage(state_dict):
             break
         message += f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection) + "\n\n"
     emit('recommendations', message)
+
+    # time.sleep(2)
+    # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
+
         
     
 @socketio.on('message')
 def get_user_input_buttons(message):
     print (f"get_user_input_buttons")
-    emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
-
+    
     confirm, edit_stage, button, message = get_user_input(message)
     print(confirm, edit_stage, button, message)
     selected_option_idx = None
