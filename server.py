@@ -100,12 +100,13 @@ def display_summary_webpage(state_dict):
     
 @socketio.on('message')
 def get_user_input_buttons(message):
-    print (f"{message} adsfjkladsf")
+    print (f"get_user_input_buttons")
     emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
 
     confirm, edit_stage, button, message = get_user_input(message)
+    print(confirm, edit_stage, button, message)
     selected_option_idx = None
-    local_feedback = ""
+    user_message = ""
     reroll = False 
     increase_level = False
 
@@ -116,9 +117,9 @@ def get_user_input_buttons(message):
     if button == 2:
         selected_option_idx = int(message) # a selection
     else:
-        local_feedback = message
+        user_message = message
 
-    continue_session(True, confirm, edit_stage, selected_option_idx, local_feedback, reroll, increase_level)
+    continue_session(True, confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level)
 
 def display_full_webpage(state_dict, curr_stage_idx):
     display_summary_webpage(state_dict)
@@ -191,6 +192,7 @@ def connect():
 
 @socketio.on('init_message')
 def getUserInfo(init_message):
+    print("init_message")
     global curr_stage_idx
     global state_dict
     global user_name
@@ -216,7 +218,7 @@ def getUserInfo(init_message):
     continue_session(False)
 
 
-def continue_session(displayed, confirm=None, edit_stage=None, selected_option_idx=None, local_feedback=None, reroll=None, increase_level=None):
+def continue_session(displayed, confirm=None, edit_stage=None, selected_option_idx=None, user_message=None, reroll=None, increase_level=None):
     # initial handeling
     global curr_stage_idx
     global state_dict
@@ -270,7 +272,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                         curr_stage_idx = edit_stage + 1
                     else:
                         # user wants to edit the stage with AI
-                        _stage_idcurrx = edit_stage
+                        curr_stage_idx = edit_stage
                         state_dict[edit_stage]["selection"] = None
                         state_dict[edit_stage]["edited"] = True
                         state_dict[curr_stage_idx]["local_feedback"].append([user_message])
