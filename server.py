@@ -105,8 +105,6 @@ def display_summary_webpage(state_dict):
         message += f"{level}, "
     emit('recommendations', message)
     # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
-
-        
     
 @socketio.on('message')
 def get_user_input_buttons(message):
@@ -198,7 +196,6 @@ def is_finalized(state_dict, stage_idx):
 def connect():
     emit('recommendations', "To start, enter your name, comma separated with your initial input \n\n")
 
-
 @socketio.on('init_message')
 def getUserInfo(init_message):
     print("init_message")
@@ -210,7 +207,6 @@ def getUserInfo(init_message):
 
     curr_stage_idx = 0
     user_name, init_input = init_message.split(",")
-    emit('recommendations', "\n\n")
 
     print(f"User {user_name} is starting the session with input: {init_input}")
 
