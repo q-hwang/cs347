@@ -13,6 +13,16 @@ import time
 
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
 debug = False
+text_mode = True
+
+def conditional_decorator(dec):
+    global text_mode
+    def decorator(func):
+        if text_mode:
+            # Return the function unchanged, not decorated.
+            return func
+        return dec(func)
+    return decorator
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
@@ -31,6 +41,13 @@ app.config['SECRET_KEY'] = 'secret!'
 app.config['CORS_ALLOWED_ORIGINS'] = ['http://localhost:3001']
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 socketio = SocketIO(app, cors_allowed_origins="http://localhost:3001")
+
+def send_message(message):
+    global text_mode
+    if text_mode:
+        print(message)
+    else:
+        emit('recommendations', message)
 
 
 def get_user_input(m):
@@ -90,25 +107,27 @@ init_guess_state_dict = [
 ]
 
 def display_summary_webpage(state_dict):
+    message = "Current Control Levels: "
+    for s in range(len(STAGES)):
+        level = state_dict[s]["level"] 
+        message += f"{level}, "
+    send_message(message)
+
+    time.sleep(2)
+
     message = ""
     for s in range(len(STAGES)):
         selection = state_dict[s]["selection"] 
         if selection is None:
             break
         message += f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection) + "\n\n"
-    emit('recommendations', message)
+    send_message(message)
 
-    time.sleep(2)
-    message = "Current Control Levels: "
-    for s in range(len(STAGES)):
-        level = state_dict[s]["level"] 
-        message += f"{level}, "
-    emit('recommendations', message)
     # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
 
         
     
-@socketio.on('message')
+@conditional_decorator(socketio.on('message'))
 def get_user_input_buttons(message):
     print (f"get_user_input_buttons")
     
@@ -118,25 +137,28 @@ def get_user_input_buttons(message):
     user_message = ""
     reroll = False 
     increase_level = False
+    direct_manipulation = False
 
     if button == 0:
         reroll = True
     if button == 1:
         increase_level = True
+    if button == 3:
+        direct_manipulation = True
     if button == 2:
         selected_option_idx = int(message) # a selection
     else:
         user_message = message
-
-    continue_session(True, confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level)
+    
+    continue_session(True, confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level, direct_manipulation)
 
 def display_full_webpage(state_dict, curr_stage_idx):
     display_summary_webpage(state_dict)
-    emit('recommendations', f"Stage {curr_stage_idx} [display the original webpage...]:")
-    selected_option = input('User give option:')
-    return selected_option
+    send_message(f"Stage {curr_stage_idx} [display the original webpage...]:")
+    
 
 def get_init_level_guess(user_name, user_input):
+    return np.array([1,2,3,1])
 
     # estimate this user's preference in this context    
     context_level = np.array(init_llm_level_guess(user_input))
@@ -178,7 +200,7 @@ def get_init_adapt_guess(user_name):
     return this_user_adapt
 
 def is_finalized(state_dict, stage_idx):
-    return type(state_dict[stage_idx]["selection"]) == str
+    return type(state_dict[stage_idx]["selection"]) == str and state_dict[stage_idx]["selection"] != "USER INPUT"
 
 # def socket_input(message):
 #     response = None
@@ -194,12 +216,12 @@ def is_finalized(state_dict, stage_idx):
 
 #     return response
 
-@socketio.event
+@conditional_decorator(socketio.event)
 def connect():
-    emit('recommendations', "To start, enter your name, comma separated with your initial input \n\n")
+    send_message("To start, enter your name, comma separated with your initial input \n\n")
 
 
-@socketio.on('init_message')
+@conditional_decorator(socketio.on('init_message'))
 def getUserInfo(init_message):
     print("init_message")
     global curr_stage_idx
@@ -210,7 +232,6 @@ def getUserInfo(init_message):
 
     curr_stage_idx = 0
     user_name, init_input = init_message.split(",")
-    emit('recommendations', "\n\n")
 
     print(f"User {user_name} is starting the session with input: {init_input}")
 
@@ -227,7 +248,7 @@ def getUserInfo(init_message):
     continue_session(False)
 
 
-def continue_session(displayed, confirm=None, edit_stage=None, selected_option_idx=None, user_message=None, reroll=None, increase_level=None):
+def continue_session(displayed, confirm=None, edit_stage=None, selected_option_idx=None, user_message=None, reroll=None, increase_level=None, direct_manipulation=False):
     # initial handeling
     global curr_stage_idx
     global state_dict
@@ -249,7 +270,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                     filled = True
                     for s in range(len(STAGES)):
                         if not is_finalized(state_dict, s):
-                            emit('recommendations', "CANNOT CONFIRM, need to complete " + STAGES[s])
+                            send_message("CANNOT CONFIRM, need to complete " + STAGES[s])
                             filled = False
                             break
                     if filled:
@@ -259,11 +280,11 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                             for i in range(len(state_dict)):
                                 if state_dict[i]["level"] > init_guess_state_dict[i]["level"]:
                                     if debug:
-                                        emit('recommendations', "ADAPTATION INCREASE")
+                                        send_message("ADAPTATION INCREASE")
                                     end_estimate[i]["expected_adapt_time"] = end_estimate[i]["expected_adapt_time"] * ADAPTATION_PENALTY
                                 else:
                                     if debug:
-                                        emit('recommendations', "ADAPTATION DECREASE")
+                                        send_message("ADAPTATION DECREASE")
                                     end_estimate[i]["level"] = max(init_level_guess[i] - 1/state_dict[i]["expected_adapt_time"], 0)
                     
                             writer.write((init_input, [x["level"] for x  in end_estimate]))
@@ -275,8 +296,12 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                         continue
                 else:
                     # user request to update a stage
-                    if selected_option_idx is not None:
-                        # user selected an option from suggestion or direct manipulation
+                    if direct_manipulation:
+                        # user selected an option via direct manipulation
+                        state_dict[edit_stage]["selection"] = user_message
+                        curr_stage_idx = edit_stage + 1
+                    elif selected_option_idx is not None:
+                        # user selected an option from suggestion 
                         state_dict[edit_stage]["selection"] = state_dict[edit_stage]["selection"][selected_option_idx]
                         curr_stage_idx = edit_stage + 1
                     else:
@@ -298,8 +323,8 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
         stage_name = STAGES[curr_stage_idx]
         stage_level = state_dict[curr_stage_idx]["level"]
         if debug:
-            emit('recommendations', "handling: " + stage_name + " " + str(stage_level))
-            emit('recommendations', str(state_dict))
+            send_message("handling: " + stage_name + " " + str(stage_level))
+            send_message(str(state_dict))
 
         if state_dict[curr_stage_idx]["selection"] is not None or any([not is_finalized(state_dict, s) for s in  state_dict[curr_stage_idx]["affected_by"]]):
             # do not handle this stage yet either because the result has already been computed or the previous stage is not finalized
@@ -308,8 +333,12 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
 
         if stage_level == 3:
             # direct maipulation:
-            selected_option = display_full_webpage(state_dict, curr_stage_idx)
-            state_dict[curr_stage_idx]["selection"] = selected_option
+            # if not displayed:
+            #     display_full_webpage(state_dict, curr_stage_idx)
+            #     return
+            # else:
+            #     selected_option = user_message
+            state_dict[curr_stage_idx]["selection"] = "USER INPUT"
 
         if stage_level  == 2:
             # recommend three options to user
@@ -334,5 +363,13 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
 
 
 if __name__ == "__main__":
-    socketio.run(app, port=5001, debug=True)
+    if text_mode:
+        connect()
+        init_message = input("User Input: ")
+        getUserInfo(init_message)
+        while True:
+            message = input("User Input: ")
+            get_user_input_buttons(message)
+    else:
+        socketio.run(app, port=5001, debug=True)
 
