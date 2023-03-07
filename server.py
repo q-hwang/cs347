@@ -124,8 +124,6 @@ def display_summary_webpage(state_dict):
     send_message(message)
 
     # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
-
-        
     
 @conditional_decorator(socketio.on('message'))
 def get_user_input_buttons(message):
