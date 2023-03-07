@@ -156,7 +156,7 @@ def display_full_webpage(state_dict, curr_stage_idx):
     
 
 def get_init_level_guess(user_name, user_input):
-    return np.array([1,2,3,1])
+    return np.array([0,1,2,0])
 
     # estimate this user's preference in this context    
     context_level = np.array(init_llm_level_guess(user_input))
@@ -329,7 +329,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
             curr_stage_idx += 1 
             continue
 
-        if stage_level == 3:
+        if stage_level == 2:
             # direct maipulation:
             # if not displayed:
             #     display_full_webpage(state_dict, curr_stage_idx)
@@ -338,7 +338,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
             #     selected_option = user_message
             state_dict[curr_stage_idx]["selection"] = "USER INPUT"
 
-        if stage_level  == 2:
+        if stage_level  == 1:
             # recommend three options to user
             local_feedback = state_dict[curr_stage_idx]["local_feedback"]
             llm_suggestions = state_dict[curr_stage_idx]["handeler"](state_dict, local_feedback)
@@ -347,7 +347,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
             curr_stage_idx = len(STAGES)
             continue
 
-        if stage_level in [0, 1]:
+        if stage_level == 0:
             # AI select and skip
             local_feedback = state_dict[curr_stage_idx]["local_feedback"]
             llm_suggestions = state_dict[curr_stage_idx]["handeler"](state_dict, local_feedback)

@@ -11,19 +11,19 @@ menus = json.load(open("menu.json"))
 
 def init_llm_level_guess(user_input):
     # e.g. I want to order some cake and I would like you to show me some of the options of the restaurant and types of the cakes
-    prompt = f"""Predict what is the user's preferred level of control over an AI recommender for each stage of ordering food from Doordash based on their input. There are four stages: selecting restaurant, selecting food, selecting delivery method, and selecting tips. Each stage has four levels of control: 0 for skip, 1 for reviewing summary, 2 for reviewing recommendation, and 3 for full user control. Note that we prefer having lower levels of controls overall to save users' time.
+    prompt = f"""Predict what is the user's preferred level of control over an AI recommender for each stage of ordering food from Doordash based on their input. There are four stages: selecting restaurant, selecting food, selecting delivery method, and selecting tips. Each stage has four levels of control: 0 for automatic AI selecting, 1 for showing AI recommendations, and 2 for full user control. Note that we prefer having lower levels of controls overall to save users' time.
 
 User input: I am excited about ordering something new today
-Levels: 2 3 1 2
+Levels: 1 2 0 1
 
 User input: Just deliver me a burger
-Levels: 0 1 0 0
+Levels: 0 0 0 0
 
 User input: I want to try some tuna sashimi but I am not sure where to order from
-Levels: 2 1 2 1
+Levels: 1 0 1 0
 
 User input: I want some mexican food
-Levels: 1 2 0 1
+Levels: 0 1 0 0
 
 User input: I am hungr now, anything is fine
 Levels: 0 0 0 0
