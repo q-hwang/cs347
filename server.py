@@ -13,7 +13,7 @@ import time
 
 from llm import init_llm_level_guess, get_llm_restaurant_recommendation, get_llm_food_recommendation, get_llm_delivery_option_recommendation, get_llm_tips_option_recommendation
 debug = False
-text_mode = True
+text_mode = False
 
 def conditional_decorator(dec):
     global text_mode
