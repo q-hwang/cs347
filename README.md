@@ -126,11 +126,11 @@ User:CONFIRM
 
 ## flow logic explained
 1. We first get an intial guess of the control levels using `get_init_adapt_guess`
-2. We basically iteratively handle each stage according to the level using `getUserInfo` and `continue_session`, until we run into requiring user input
+2. We basically iteratively handle each stage according to the level using `getUserInfo` and `continue_session`, until we run into requiring user input. Send the current selection to frontend to render via `display_summary_webpage`.
 3. Get the user input from the frontend or termial input. 
-4. Roll back to handle the stage that user edited in step 3. If this input also affects later stages, clear those selections for recomptutation as well
-5. resume handeling stages sequentially from the edited stage; basically repeat from step 2
-6. user enter confirm. We collect the data for adaptation
+4. Roll back to handle the stage that user edited in step 3 using `continue_session`. If this input also affects later stages, clear those selections for recomptutation as well
+5. resume handeling stages sequentially from the edited stage, basically repeating from step 2
+6. user enter confirm. We collect the data for adaptation by saving it in `histories/`
 
 
 ## Record user's preference
