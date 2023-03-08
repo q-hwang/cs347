@@ -26,8 +26,8 @@ def conditional_decorator(dec):
 
 STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
-SMOOTH = 1
-CONTEXT_WEIGHT = 1
+SMOOTH = 3
+CONTEXT_WEIGHT = 0.7
 
 curr_stage_idx = 0
 state_dict = []
@@ -190,7 +190,7 @@ def get_init_level_guess(user_name, user_input):
     
 def get_init_adapt_guess(user_name):
     this_user_adapt = np.array([1,1,1,1]) # default
-    if os.path.exists(f"histories/{user_name}_levels.jsonl"):
+    if os.path.exists(f"histories/{user_name}_expected_adapt_times.jsonl"):
         with jsonlines.open(f"histories/{user_name}_expected_adapt_times.jsonl") as reader:
             for adapt in reader:
                 return adapt

@@ -1,24 +1,33 @@
 # cs347
 
+# Overview
+
+`cs347-frontend/` contains frontend code and `server.py` contains the main backend code.
+
+To run the code with frontend, run `npm install` and `npm start` in `cs347-frontend/`. Then run `server.py` in another terminal.
+
+To run the code without frontend, modify `text_mode=True` in `server.py` and run it in the terminal.
+
+
 # Backend Interaction flow
 
-server.py gives a basic text interface for the pipepline. To try it, please put your openai key in `keys/key.txt`.
+`server.py` contains the main backend code, and `llm.py` contains the code for rompting LLM as the AI agent. To try it, please put your openai key in `keys/key.txt`.
 
 ## Overview and assumptitons
 
 There are four stages: ["restaurant", "food items", "delivery methods", "tips"]
 
 There are four levels for each stage:
-0: do not display what is the selected option (not implemented now for debugging)
-1: skip the stage and display the selected option at the summary page (default)
-2: give options at the summary page
-3: user direct control (currently assuming user will just enter a name directly)
+0: Skip the stage and display the selected option at the summary page (default)
+1: give options at the summary page
+2: user direct control (currently assuming user will just enter a name directly)
 
 
-There are three edit actions (buttons) for each stage:
-0: reroll/enter a chat message
+There are four backend actions for each stage:
+0: enter a chat message and redo the AI action
 1: increase control (-> recommendation -> direct control)
 2: select a option among the recommended (give an index)
+3: direct manipulation
 
 ## example flow
 
@@ -42,14 +51,8 @@ User:CONFIRM
 
 2. user ask to edit stage 3 (tips)
 
-There are three edit actions (buttons):
-0: reroll
-1: increase control (-> recommendation -> direct control)
-2: select a option among the recommended (give an index)
-For option 0 and 1, user can additional specify a message that is passed to LLM.
-
 Input format:
-<edit_stage_id>,<edit_action_id>,<optional selection_id for 2/ message for 0>
+<edit_stage_id>,<edit_action_id>,<optional message to LLM for action 0/selection_id for 2/ user manual selection for action 3>
 
 example 1 (recommendation)
 ```
@@ -122,27 +125,25 @@ User:CONFIRM
 ```
 
 ## flow logic explained
-1. We first get an intial guess of the levels using get_init_adapt_guess
-2. We basically iteratively handle each stage according to the level, until we run into requiring user input
-3. Get the user input. 
-4. Roll back to handle the stage that user edited in 3. If this input also affects later stages, clear those selections for recomptutation as well
-5. resume handeling stages sequentially from the edited stage; basically repeat from 2
+1. We first get an intial guess of the control levels using `get_init_adapt_guess`
+2. We basically iteratively handle each stage according to the level using `getUserInfo` and `continue_session`, until we run into requiring user input
+3. Get the user input from the frontend or termial input. 
+4. Roll back to handle the stage that user edited in step 3. If this input also affects later stages, clear those selections for recomptutation as well
+5. resume handeling stages sequentially from the edited stage; basically repeat from step 2
 6. user enter confirm. We collect the data for adaptation
 
 
-## Elicit User preference
+## Record user's preference
 1. if user choose to increase level in a stage -> increase level recorded to what user ends up having
 2. if user choose to not edit a stage -> decrease level gradually by 1/(expected number of round before user trusts this). This expected_number doubles every time the level of this stage is increased, so that this decay becomes slower and slower.
 
 
 ## Adapt to user preference
-1. context adaptation: LLM gives an guess (always used in combination with others; the combination ratio is CONTEXT_WEIGHT=1)
-2. global adaptation: if current user is new, we init from average of other user (average range: last SMOOTH=1)
-3. user adaptation: if current user has history record, we use the average of this user (average range: last SMOOTH=1)
+1. context adaptation: LLM gives an guess (always used in combination with others; the combination ratio is CONTEXT_WEIGHT=0.7)
+2. global adaptation: if current user is new, we init from average of other user (average range: SMOOTH=3)
+3. user adaptation: if current user has history record, we use the average of this user (average range: SMOOTH=3)
 
 
-## Fake Menus
-They are in menu.json
 
 More details about code:
 - display_summary_webpage: display the summary and get user input
