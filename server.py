@@ -369,5 +369,6 @@ if __name__ == "__main__":
             message = input("User Input: ")
             get_user_input_buttons(message)
     else:
+        print("about to run!")
         socketio.run(app, port=5001, debug=True)
 
