@@ -42,12 +42,12 @@ app.config['CORS_ALLOWED_ORIGINS'] = ['http://localhost:3001']
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 socketio = SocketIO(app, cors_allowed_origins="http://localhost:3001")
 
-def send_message(message):
+def send_message(message, channel='recommendations'):
     global text_mode
     if text_mode:
         print(message)
     else:
-        emit('recommendations', message)
+        emit(channel, message)
 
 
 def get_user_input(m):
@@ -111,7 +111,7 @@ def display_summary_webpage(state_dict):
     for s in range(len(STAGES)):
         level = state_dict[s]["level"] 
         message += f"{level}, "
-    send_message(message)
+    send_message(message, 'control-levels')
 
     time.sleep(2)
 
