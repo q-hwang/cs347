@@ -28,6 +28,7 @@ STAGES = ["restaurant", "food items", "delivery method", "tips"]
 ADAPTATION_PENALTY = 2
 SMOOTH = 3
 CONTEXT_WEIGHT = 0.7
+CONTROL_GROUP_FLAG = False
 
 curr_stage_idx = 0
 state_dict = []
@@ -121,6 +122,8 @@ def display_summary_webpage(state_dict):
         if selection is None:
             break
         message += f"Stage {s}: Selected {STAGES[s]}:\n" + str(selection) + "\n\n"
+    print('message: ' + message)
+    print(state_dict)
     send_message(message)
 
     # emit('recommendations', "\nTo enter an action, following this format: <edit_stage_id>,<edit_action_id>, optional: <a chat messgae message if edit_action_id=0/selection_id if edit_action_id=2/>\nActions:   0: Reroll/Chat, 1: Increase Level, 2: Select Option\n\nTo confirm the order, type CONFIRM\n\n")
@@ -156,7 +159,8 @@ def display_full_webpage(state_dict, curr_stage_idx):
     
 
 def get_init_level_guess(user_name, user_input):
-    return np.array([0,1,2,0])
+    if CONTROL_GROUP_FLAG:
+        return np.array([0,0,0,0])
 
     # estimate this user's preference in this context    
     context_level = np.array(init_llm_level_guess(user_input))
@@ -189,6 +193,7 @@ def get_init_level_guess(user_name, user_input):
         return (all_user_level * len(all_user_levels) + all_user_level_default*3) / (len(all_user_levels)+3) * (1-CONTEXT_WEIGHT) + context_level* CONTEXT_WEIGHT
     
 def get_init_adapt_guess(user_name):
+
     this_user_adapt = np.array([1,1,1,1]) # default
     if os.path.exists(f"histories/{user_name}_expected_adapt_times.jsonl"):
         with jsonlines.open(f"histories/{user_name}_expected_adapt_times.jsonl") as reader:
@@ -310,7 +315,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                         state_dict[curr_stage_idx]["local_feedback"].append([user_message])
                         if increase_level:
                             curr_level = state_dict[curr_stage_idx]["level"]
-                            state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 3)
+                            state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 2)
                     
                     # erase other affected stages for recomputation
                     for s in state_dict[edit_stage]["affects_stage"]:
