@@ -190,7 +190,8 @@ def get_init_level_guess(user_name, user_input):
         this_user_level = np.mean(this_user_levels[-SMOOTH:], axis=0)
         return this_user_level * (1-CONTEXT_WEIGHT) + context_level * CONTEXT_WEIGHT
     else:
-        return (all_user_level * len(all_user_levels) + all_user_level_default*3) / (len(all_user_levels)+3) * (1-CONTEXT_WEIGHT) + context_level* CONTEXT_WEIGHT
+        return all_user_level_default * (1-CONTEXT_WEIGHT) + context_level* CONTEXT_WEIGHT
+        # return (all_user_level * len(all_user_levels) + all_user_level_default*3) / (len(all_user_levels)+3) * (1-CONTEXT_WEIGHT) + context_level* CONTEXT_WEIGHT
     
 def get_init_adapt_guess(user_name):
 
@@ -241,6 +242,7 @@ def getUserInfo(init_message):
     # TODO: try populate this initial guess with log.txt, heuristic + maybe with LLM using few shot prompting 
     init_level_guess = get_init_level_guess(user_name, init_input)
     init_adapt_guess = get_init_adapt_guess(user_name)
+    print(f"Initial level guess: {init_level_guess}")
     # emit('recommendations', init_level_guess)
     # emit('recommendations', init_adapt_guess)
     for i in range(len(STAGES)):

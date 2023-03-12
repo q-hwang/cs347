@@ -11,10 +11,7 @@ menus = json.load(open("menu.json"))
 
 def init_llm_level_guess(user_input):
     # e.g. I want to order some cake and I would like you to show me some of the options of the restaurant and types of the cakes
-    prompt = f"""Predict what is the user's preferred level of control over an AI recommender for each stage of ordering food from Doordash based on their input. There are four stages: selecting restaurant, selecting food, selecting delivery method, and selecting tips. Each stage has four levels of control: 0 for automatic AI selecting, 1 for showing AI recommendations, and 2 for full user control. Note that we prefer having lower levels of controls overall to save users' time.
-
-User input: I am excited about ordering something new today
-Levels: 1 2 0 1
+    prompt = f"""Predict what is the user's preferred level of control over an AI recommender for each stage of ordering food from Doordash based on their input. There are four stages: selecting restaurant, selecting food, selecting delivery method, and selecting tips. Each stage has four levels of control: 0 for automatic AI selecting, 1 for showing AI recommendations, and 2 for full user control.
 
 User input: Just deliver me a burger
 Levels: 0 0 0 0
@@ -25,8 +22,14 @@ Levels: 1 0 1 0
 User input: I want some mexican food
 Levels: 0 1 0 0
 
-User input: I am hungr now, anything is fine
-Levels: 0 0 0 0
+User input: I am excited about ordering something new today
+Levels: 1 2 0 1
+
+User input: Get me some tacos?
+Levels: 0 1 0 0
+
+User input: I want sushi
+Levels: 0 1 1 0
 
 User input: {user_input.strip()}
 Levels:"""
@@ -34,7 +37,7 @@ Levels:"""
         model="text-davinci-003",
         prompt=prompt,
         max_tokens=10,
-        temperature=0.1,
+        temperature=0.6,
         n=1,
         stop="\n"
     )['choices'][0]['text']
@@ -140,19 +143,21 @@ def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
 
     restaurant = state_dict[0]["selection"]
     dish = state_dict[1]["selection"]
+    while True:
+        prompt = f"""The user has chosen to order {dish} from {restaurant} via the selected delivery option \"{state_dict[2]["selection"]}\". Suggest three tips amount in us dollar for the user based on their input, ranked from more suggested to less suggested. The sugggested three tips amount should be separated by commas.
 
-    prompt = f"""The user has chosen to order {dish} from {restaurant} via the selected delivery option \"{state_dict[2]["selection"]}\". Suggest three tips amount in us dollar for the user based on their input, ranked from more suggested to less suggested. The sugggested three tips amount should be separated by commas.
+    {prompt_history}"""
+        # print(prompt)
 
-{prompt_history}"""
-    # print(prompt)
-
-    completion = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
-        max_tokens=10,
-        temperature=0.1,
-        n=1,
-        stop="\n"
-    )['choices'][0]['text']
+        completion = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            max_tokens=10,
+            temperature=0.1,
+            n=1,
+            stop="\n"
+        )['choices'][0]['text']
+        if "$" in completion:
+            break
 
     return [x.strip() for x in completion.strip().split(",")]
