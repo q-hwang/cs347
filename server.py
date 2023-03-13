@@ -340,6 +340,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
             # do not handle this stage yet either because the result has already been computed or the previous stage is not finalized
             curr_stage_idx += 1 
             continue
+        print("doing: " + stage_name + " " + str(stage_level))
 
         if stage_level == 2:
             # direct maipulation:

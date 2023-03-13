@@ -45,18 +45,30 @@ Levels:"""
     return [int(x) for x in completion.strip().split(" ")]
 
 
-def build_prompt_history(word, local_feedback=None):
-    prompt_history = "User Input: Anything"
-    if local_feedback is not None:
-        prompt_history = ""
-        for idx, l in enumerate(local_feedback):
-            prompt_history += f"User Input: {l[0]}"
-            if len(l) > 1 and idx != len(local_feedback) - 1:
-                if type(l[1]) == list:
-                    l[1] = ", ".join(l[1])
-                prompt_history += f"\nPreviously suggested {word}: {l[1]}\n\n"
+def build_prompt_history(word, local_feedback, pos_fix = None):
+    prompt_history = ""
+    previous_post_fix = None
+    for idx, l in enumerate(local_feedback):
+        if pos_fix is not None:
+            if pos_fix[0] not in l[0]:
+                l[0] += pos_fix[0] + pos_fix[1]
+                previous_post_fix = pos_fix[1]
             else:
-                break
+                previous_post_fix = l[0].split(pos_fix[0])[-1]
+        prompt_history += f"User Input: {l[0]}"
+        if len(l) > 1 and idx != len(local_feedback) - 1:
+            if type(l[1]) == list:
+                l[1] = ", ".join(l[1])
+            prompt_history += f"\nPreviously suggested {word}: {l[1]}\n\n"
+        else:
+            break
+
+    if pos_fix is not None and previous_post_fix != pos_fix[1]:
+        # user changed restaurant
+        # assume previous restaurant is already executed
+        prompt_history += f"\nPreviously suggested {word}: {local_feedback[-1][1]}\n\n"
+        local_feedback.append(["Actually, I want to try something " + pos_fix[0]+ pos_fix[1]])
+        prompt_history += f"User Input: {local_feedback[-1][0]}"
 
     prompt_history += "\nSuggested " + word + ":"
     return prompt_history
@@ -89,13 +101,14 @@ def get_llm_restaurant_recommendation(state_dict, local_feedback=None):
 
 def get_llm_food_recommendation(state_dict, local_feedback=None):
 
-    prompt_history = "User Input: Anything"
-    if local_feedback is not None:
-        prompt_history = build_prompt_history("Dishes", local_feedback)
-
     restaurant = state_dict[0]["selection"]
 
-    prompt = f"""Suggest three dishes combo from the restaurant {restaurant} for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude at most three concise dish names, separated by commas. The sugggested three dishes should be separated by semicolons.
+    prompt_history = f"User Input: Anything from restaurant {restaurant}"
+    if local_feedback is not None:
+        prompt_history = build_prompt_history("Dishes", local_feedback, pos_fix = (" from restaurant ", restaurant))
+
+
+    prompt = f"""Suggest three dishes combo from the given restaurant for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude at most three concise dish names, separated by commas. The sugggested three dishes should be separated by semicolons.
 
 {prompt_history}"""
     # print(prompt)
