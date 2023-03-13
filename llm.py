@@ -64,8 +64,9 @@ def build_prompt_history(word, local_feedback, pos_fix = None):
             break
 
     if pos_fix is not None and previous_post_fix != pos_fix[1]:
-        # user changed restaurant
+        # user just changed restaurant
         # assume previous restaurant is already executed
+        # can also just throw away the previous history here
         prompt_history += f"\nPreviously suggested {word}: {local_feedback[-1][1]}\n\n"
         local_feedback.append(["Actually, I want to try something " + pos_fix[0]+ pos_fix[1]])
         prompt_history += f"User Input: {local_feedback[-1][0]}"
