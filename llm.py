@@ -79,7 +79,7 @@ def get_llm_restaurant_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(",")]
+    return [x.strip() for x in completion.strip().split(",")][:3]
 
 
 def get_llm_food_recommendation(state_dict, local_feedback=None):
@@ -90,7 +90,7 @@ def get_llm_food_recommendation(state_dict, local_feedback=None):
 
     restaurant = state_dict[0]["selection"]
 
-    prompt = f"""Suggest three dishes combo from the restaurant {restaurant} for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude 1 to three dishes, separated by commas. The sugggested three dishes should be separated by semicolons.
+    prompt = f"""Suggest three dishes combo from the restaurant {restaurant} for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude at most three concise dish names, separated by commas. The sugggested three dishes should be separated by semicolons.
 
 {prompt_history}"""
     # print(prompt)
@@ -104,8 +104,14 @@ def get_llm_food_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(";")]
+    completion = completion.replace("\'", "")
 
+    return [truncate(x.strip(), 70) for x in completion.strip().split(";")][:3]
+
+def truncate(text, length = 70):
+    if len(text) > length:
+        return text[:length] + "..."
+    return text
 
 def get_llm_delivery_option_recommendation(state_dict, local_feedback=None):
     prompt_history = "User Input: Anything"
@@ -128,7 +134,7 @@ def get_llm_delivery_option_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(",")]
+    return [x.strip() for x in completion.strip().split(",")][:3]
 
 
 def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
@@ -155,4 +161,4 @@ def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
         if "$" in completion:
             break
 
-    return [x.strip() for x in completion.strip().split(",")]
+    return [x.strip() for x in completion.strip().split(",")][:3]
