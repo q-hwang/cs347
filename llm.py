@@ -49,12 +49,14 @@ def build_prompt_history(word, local_feedback=None):
     prompt_history = "User Input: Anything"
     if local_feedback is not None:
         prompt_history = ""
-        for l in local_feedback:
+        for idx, l in enumerate(local_feedback):
             prompt_history += f"User Input: {l[0]}"
-            if len(l) > 1:
+            if len(l) > 1 and idx != len(local_feedback) - 1:
                 if type(l[1]) == list:
                     l[1] = ", ".join(l[1])
                 prompt_history += f"\nPreviously suggested {word}: {l[1]}\n\n"
+            else:
+                break
 
     prompt_history += "\nSuggested " + word + ":"
     return prompt_history
@@ -79,7 +81,10 @@ def get_llm_restaurant_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(",")][:3]
+    completion = completion.replace("'", "")
+
+    suggestions = [x.strip() for x in completion.strip().split(",") if x.strip() != ""][:3]
+    return suggestions if len(suggestions) > 0 else get_llm_restaurant_recommendation(state_dict, local_feedback)
 
 
 def get_llm_food_recommendation(state_dict, local_feedback=None):
@@ -104,9 +109,10 @@ def get_llm_food_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    completion = completion.replace("\'", "")
+    completion = completion.replace("'", "")
 
-    return [truncate(x.strip(), 70) for x in completion.strip().split(";")][:3]
+    suggestions = [truncate(x.strip(), 70) for x in completion.strip().split(";")][:3]
+    return suggestions if len(suggestions) > 0 else get_llm_food_recommendation(state_dict, local_feedback)
 
 def truncate(text, length = 70):
     if len(text) > length:
@@ -134,7 +140,8 @@ def get_llm_delivery_option_recommendation(state_dict, local_feedback=None):
         stop="\n"
     )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(",")][:3]
+    suggestions = [x.strip() for x in completion.strip().split(",") if x.strip() != ""][:3]
+    return suggestions if len(suggestions) > 0 else get_llm_delivery_option_recommendation(state_dict, local_feedback)
 
 
 def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
@@ -144,21 +151,20 @@ def get_llm_tips_option_recommendation(state_dict, local_feedback=None):
 
     restaurant = state_dict[0]["selection"]
     dish = state_dict[1]["selection"]
-    while True:
-        prompt = f"""The user has chosen to order {dish} from {restaurant} via the selected delivery option \"{state_dict[2]["selection"]}\". Suggest three tips amount in us dollar for the user based on their input, ranked from more suggested to less suggested. The sugggested three tips amount should be separated by commas.
+    prompt = f"""The user has chosen to order {dish} from {restaurant} via the selected delivery option \"{state_dict[2]["selection"]}\". Suggest three tips amount in us dollar for the user based on their input, ranked from more suggested to less suggested. The sugggested three tips amount should be separated by commas.
 
-    {prompt_history}"""
-        # print(prompt)
+{prompt_history}"""
+    # print(prompt)
 
-        completion = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            max_tokens=10,
-            temperature=0.1,
-            n=1,
-            stop="\n"
-        )['choices'][0]['text']
-        if "$" in completion:
-            break
+    completion = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=prompt,
+        max_tokens=10,
+        temperature=0.1,
+        n=1,
+        stop="\n"
+    )['choices'][0]['text']
 
-    return [x.strip() for x in completion.strip().split(",")][:3]
+    
+    suggestions = [x.strip() for x in completion.strip().split(",") if "$" in x.strip()][:3]
+    return suggestions if len(suggestions) > 0 else get_llm_tips_option_recommendation(state_dict, local_feedback)

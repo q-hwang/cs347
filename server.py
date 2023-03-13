@@ -143,12 +143,13 @@ def get_user_input_buttons(message):
     if button == 0:
         reroll = True
     if button == 1:
-        increase_level = True
+        increase_level = int(message) # a level
+        user_message = "Something else"
     if button == 3:
         direct_manipulation = True
     if button == 2:
         selected_option_idx = int(message) # a selection
-    else:
+    elif button != 1:
         user_message = message
     
     continue_session(True, confirm, edit_stage, selected_option_idx, user_message, reroll, increase_level, direct_manipulation)
@@ -222,7 +223,7 @@ def is_finalized(state_dict, stage_idx):
 
 @conditional_decorator(socketio.event)
 def connect():
-    send_message("To start, enter your name. \n\n")
+    send_message("To start, enter the below. \n\n")
 
 
 @conditional_decorator(socketio.on('init_message'))
@@ -303,6 +304,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                     # user request to update a stage
                     if direct_manipulation:
                         # user selected an option via direct manipulation
+                        print("direct_manipulation")
                         state_dict[edit_stage]["selection"] = user_message
                         curr_stage_idx = edit_stage + 1
                     elif selected_option_idx is not None:
@@ -315,9 +317,11 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
                         state_dict[edit_stage]["selection"] = None
                         state_dict[edit_stage]["edited"] = True
                         state_dict[curr_stage_idx]["local_feedback"].append([user_message])
-                        if increase_level:
-                            curr_level = state_dict[curr_stage_idx]["level"]
-                            state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 2)
+                        if increase_level is not None:
+                            assert increase_level <= 2 and state_dict[curr_stage_idx]["level"] <= increase_level
+                            state_dict[curr_stage_idx]["level"] =  increase_level
+                            # curr_level = state_dict[curr_stage_idx]["level"]
+                            # state_dict[curr_stage_idx]["level"] =  min(curr_level + 1, 2)
                     
                     # erase other affected stages for recomputation
                     for s in state_dict[edit_stage]["affects_stage"]:
@@ -327,6 +331,7 @@ def continue_session(displayed, confirm=None, edit_stage=None, selected_option_i
         
         stage_name = STAGES[curr_stage_idx]
         stage_level = state_dict[curr_stage_idx]["level"]
+        print("handling: " + stage_name + " " + str(stage_level))
         if debug:
             send_message("handling: " + stage_name + " " + str(stage_level))
             send_message(str(state_dict))
