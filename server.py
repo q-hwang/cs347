@@ -222,7 +222,7 @@ def is_finalized(state_dict, stage_idx):
 
 @conditional_decorator(socketio.event)
 def connect():
-    send_message("To start, enter your name and what you want to order! \n\n")
+    send_message("To start, enter your name. \n\n")
 
 
 @conditional_decorator(socketio.on('init_message'))
