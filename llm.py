@@ -69,7 +69,7 @@ def get_llm_restaurant_recommendation(state_dict, local_feedback=None):
     for name, menu in menus.items():
         restaurants.append(name)
 
-    prompt = f"""Suggest three restaurants for the user to order from based on their input, ranked from more suggested to less suggested. The restaurants are: {", ".join(restaurants)}. The sugggested three restaurants should be separated by commas.
+    prompt = f"""Suggest three restaurants for the user to order from based on their input, ranked from more suggested to less suggested. The sugggested three restaurants should be separated by commas.
 
 {prompt_history}"""
     # print(prompt)
@@ -93,9 +93,9 @@ def get_llm_food_recommendation(state_dict, local_feedback=None):
         prompt_history = build_prompt_history("Dishes", local_feedback)
 
     restaurant = state_dict[0]["selection"]
-    dishes = list(menus[restaurant].keys())
+    # dishes = list(menus[restaurant].keys())
 
-    prompt = f"""Suggest three dishes combo for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude 1 to three dishes, separated by commas. The dishes are: {", ".join(dishes)}. The sugggested three dishes should be separated by semicolons.
+    prompt = f"""Suggest three dishes combo from the restaurant {restaurant} for the user based on their input, ranked from more suggested to less suggested. Each dish combo should inlcude 1 to three dishes, separated by commas. The sugggested three dishes should be separated by semicolons.
 
 {prompt_history}"""
     # print(prompt)
