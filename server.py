@@ -236,7 +236,7 @@ def getUserInfo(init_message):
     global init_level_guess
 
     curr_stage_idx = 0
-    user_name, init_input = init_message.split(",")
+    user_name, init_input = init_message.split(";", 1)
 
     print(f"User {user_name} is starting the session with input: {init_input}")
 
