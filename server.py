@@ -56,7 +56,7 @@ def get_user_input(m):
     # emit('recommendations', "==================================\n\n")
     if "CONFIRM" in input_string:
         return True, 0, 0, ""
-    inputs = input_string.split(",") 
+    inputs = input_string.split(",", 2) 
     edit_stage = int(inputs[0])
     button  = int(inputs[1])
     message = ""
